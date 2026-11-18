@@ -1,8 +1,39 @@
+
 import '../models/article.dart';
 
+// ApiService bertugas menyediakan data artikel untuk aplikasi.
+//
+// Pada versi ini, data disimpan secara lokal (hardcoded) di dalam
+// tiga List, yaitu News, Blogs, dan Reports.
+//
+// Jadi, aplikasi tidak perlu memanggil API internet untuk
+// menampilkan daftar artikel. Data tetap bisa ditampilkan
+// ketika koneksi internet bermasalah.
 class ApiService {
+
+  // Method untuk mengambil artikel berdasarkan kategori/menu.
+  //
+  // Parameter menu menentukan data mana yang akan ditampilkan:
+  // 'news', 'blogs', atau 'reports'.
+  //
+  // Future<List<Article>> berarti method ini menghasilkan
+  // List berisi objek Article secara asynchronous.
   Future<List<Article>> fetchArticles(String menu) async {
-    await Future.delayed(const Duration(milliseconds: 300)); 
+
+    // Memberikan jeda 300 milidetik.
+    // Ini hanya simulasi proses pengambilan data.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // =========================================================
+    // 1. DATA NEWS
+    // =========================================================
+    //
+    // List<Map<String, dynamic>> digunakan untuk menyimpan
+    // beberapa data artikel dalam bentuk Map.
+    //
+    // Setiap Map mewakili satu artikel.
+    // Key seperti id, title, authors, dan summary merupakan
+    // informasi yang dimiliki oleh setiap artikel.
 
     final List<Map<String, dynamic>> dataNews = [
       {
@@ -107,6 +138,10 @@ class ApiService {
       }
     ];
 
+    // =========================================================
+    // 2. DATA BLOGS
+    // =========================================================
+
     final List<Map<String, dynamic>> dataBlogs = [
       {
         "id": 2614,
@@ -210,6 +245,14 @@ class ApiService {
       }
     ];
 
+    // =========================================================
+    // 3. DATA REPORTS
+    // =========================================================
+    //
+    // Beberapa data Reports memiliki authors kosong ([]).
+    // Karena itu, Article.fromJson menggunakan news_site
+    // sebagai nama author pengganti.
+
     final List<Map<String, dynamic>> dataReports = [
       {
         "id": 1662,
@@ -235,7 +278,7 @@ class ApiService {
         "id": 1660,
         "title": "Boeing’s confidence remains high in Starliner’s return with crew",
         "authors": [],
-        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background_out_window.png",
+        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background.png",
         "news_site": "Boeing",
         "summary": "Since Starliner’s Crew Flight Test (CFT) launch on June 5, Boeing and NASA have conducted extensive testing of its propulsion system in space and on the ground.",
         "published_at": "2024-08-02T23:32:46Z",
@@ -245,7 +288,7 @@ class ApiService {
         "id": 1656,
         "title": "Starliner Return to Earth Preps Underway",
         "authors": [],
-        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background_out_window.png",
+        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background.png",
         "news_site": "Boeing",
         "summary": "Practiced, prepared, checked out, refilled, and inspected – the Starliner team is proceeding through checklists to be ready for return when a date is chosen.",
         "published_at": "2024-07-31T21:41:37Z",
@@ -255,7 +298,7 @@ class ApiService {
         "id": 1655,
         "title": "Starliner Docked Hot Fire Testing Complete",
         "authors": [],
-        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background_out_window.png",
+        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background.png",
         "news_site": "Boeing",
         "summary": "Spacecraft thrusters tested and helium system checked in second successful docked hot fire test.",
         "published_at": "2024-07-27T20:50:47Z",
@@ -285,7 +328,7 @@ class ApiService {
         "id": 1654,
         "title": "Starliner team closes in on thruster issue root cause, prepares for return to Earth",
         "authors": [],
-        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background_out_window.png",
+        "image_url": "https://boeing-jtti.s3.amazonaws.com/wp-content/uploads/2023/02/13165520/docking_with_earth_in_background.png",
         "news_site": "Boeing",
         "summary": "Thruster testing and inspections on the ground lead to meaningful findings prior to Starliner’s return.",
         "published_at": "2024-07-25T19:18:32Z",
@@ -297,7 +340,7 @@ class ApiService {
         "authors": [],
         "image_url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/ISS_after_completion_%28as_of_June_2006%29.jpg",
         "news_site": "NASA",
-        "summary": "Boeing CST-100 Crewed Flight Test (CFT): Today, the CFT crew assisted the ISS crew by installing the ArgUS 1-1 Multi Payload Platform in the NanoRacks Airlock (NRAL).",
+        "summary": "Boeing CST-100 Crewed Flight Test (CFT): Today, the ISS crew assisted the ISS crew by installing the ArgUS 1-1 Multi Payload Platform in the NanoRacks Airlock (NRAL).",
         "published_at": "2024-07-24T19:21:00Z",
         "url": "https://blogs.nasa.gov/stationreport/2024/07/24/iss-daily-summary-report-7-24-2024/"
       },
@@ -313,12 +356,52 @@ class ApiService {
       }
     ];
 
-    List<Map<String, dynamic>> selectedData = [];
-    if (menu == 'news') selectedData = dataNews;
-    if (menu == 'blogs') selectedData = dataBlogs;
-    if (menu == 'reports') selectedData = dataReports;
+    // =========================================================
+    // 4. MEMILIH DATA BERDASARKAN MENU
+    // =========================================================
+    //
+    // Nama menu dinormalisasi terlebih dahulu.
+    // trim() menghapus spasi di awal dan akhir.
+    // toLowerCase() mengubah huruf menjadi huruf kecil.
+    //
+    // Contoh:
+    // 'News' menjadi 'news'.
+    // 'BLOGS' menjadi 'blogs'.
+    // ' Reports ' menjadi 'reports'.
+    //
+    // Dengan begitu, perbedaan huruf kapital tidak membuat
+    // data gagal ditemukan.
 
-    return selectedData.map((e) => Article.fromJson(e, menu)).toList();
+    final normalizedMenu = menu.trim().toLowerCase();
+
+    // Menyiapkan List kosong untuk menampung data terpilih.
+    List<Map<String, dynamic>> selectedData = [];
+
+    // Memilih daftar artikel sesuai kategori.
+    if (normalizedMenu == 'news') {
+      selectedData = dataNews;
+    } else if (normalizedMenu == 'blogs' ||
+        normalizedMenu == 'blog') {
+      selectedData = dataBlogs;
+    } else if (normalizedMenu == 'reports' ||
+        normalizedMenu == 'report') {
+      selectedData = dataReports;
+    }
+
+    // =========================================================
+    // 5. MENGUBAH MAP MENJADI OBJECT ARTICLE
+    // =========================================================
+    //
+    // Data awal masih berbentuk Map<String, dynamic>.
+    // map() mengubah setiap Map menjadi object Article
+    // melalui factory Article.fromJson().
+    //
+    // toList() mengubah hasil map menjadi List<Article>.
+    //
+    // normalizedMenu dikirim sebagai kategori artikel.
+
+    return selectedData
+        .map((e) => Article.fromJson(e, normalizedMenu))
+        .toList();
   }
 }
-
