@@ -1155,3 +1155,197 @@ Contoh jawaban filter:
 out="/mnt/data/README.md"
 pypandoc.convert_text(readme, "md", format="md", outputfile=out, extra_args=["--standalone"])
 print(f"README berhasil dibuat: {out}\nUkuran: {os.path.getsize(out):,} bytes\nBagian: {readme.count(chr(10) + '## ')} heading utama")
+
+## 14.7 Menggunakan API Tanpa Membuat Dataset JSON Manual
+
+Pada aplikasi ini, data artikel saat ini masih menggunakan dataset lokal yang ditulis langsung di dalam `ApiService`. Namun, jika nantinya diminta menggunakan API sungguhan, data tidak perlu dibuat atau ditulis manual dalam bentuk JSON.
+
+API akan mengirimkan data dalam format JSON melalui endpoint. Aplikasi cukup melakukan HTTP request, menerima response, mengubah JSON menjadi objek `Article`, kemudian menampilkan data tersebut.
+
+### Alur Pengambilan Data dari API
+
+```text
+ListScreen
+    |
+    v
+ApiService
+    |
+    v
+http.get(endpoint)
+    |
+    v
+Server API
+    |
+    v
+JSON Response
+    |
+    v
+jsonDecode()
+    |
+    v
+Article.fromJson()
+    |
+    v
+List<Article>
+    |
+    v
+ListScreen
+    |
+    v
+ArticleCard
+```
+
+### Contoh Implementasi API Menggunakan HTTP GET
+
+Jika API mengembalikan JSON berbentuk List secara langsung, implementasinya dapat ditulis seperti berikut:
+
+```dart
+static Future<List<Article>> fetchArticles() async {
+  final response = await http.get(
+    Uri.parse('https://example.com/api/articles'),
+  );
+
+  if (response.statusCode == 200) {
+    final List data = jsonDecode(response.body);
+
+    return data.map((item) {
+      return Article.fromJson(item);
+    }).toList();
+  } else {
+    throw Exception('Gagal mengambil data artikel');
+  }
+}
+```
+
+**Penjelasan:**
+
+1. `http.get()` digunakan untuk meminta data dari endpoint API.
+2. `response.statusCode` digunakan untuk memeriksa apakah request berhasil.
+3. `jsonDecode(response.body)` mengubah response JSON menjadi objek Dart.
+4. `Article.fromJson(item)` mengubah setiap data JSON menjadi objek `Article`.
+5. `.toList()` mengubah hasil pemetaan menjadi `List<Article>`.
+
+> Catatan: `https://example.com/api/articles` hanya contoh endpoint. URL tersebut harus diganti dengan endpoint API yang sebenarnya.
+
+### Contoh Bentuk Response JSON
+
+API dapat mengembalikan data dengan bentuk List langsung:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Contoh Judul Artikel",
+    "authors": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "image_url": "https://example.com/image.jpg",
+    "news_site": "Example News",
+    "summary": "Contoh ringkasan artikel.",
+    "published_at": "2026-11-18T10:00:00Z",
+    "url": "https://example.com/article",
+    "category": "News"
+  }
+]
+```
+
+Namun, beberapa API membungkus data artikel di dalam key tertentu, misalnya `results`:
+
+```json
+{
+  "results": [
+    {
+      "id": 1,
+      "title": "Contoh Judul Artikel"
+    }
+  ]
+}
+```
+
+Jika bentuk response seperti ini, bagian parsing perlu disesuaikan:
+
+```dart
+final Map<String, dynamic> data = jsonDecode(response.body);
+
+final List articles = data['results'];
+
+return articles.map((item) {
+  return Article.fromJson(item);
+}).toList();
+```
+
+Jadi, cara membaca response bergantung pada struktur JSON yang diberikan oleh API.
+
+---
+
+## 14.8 Fungsi Article.fromJson()
+
+`Article.fromJson()` berfungsi untuk mengubah data JSON menjadi objek `Article` agar dapat digunakan oleh aplikasi Flutter.
+
+Contoh:
+
+```dart
+factory Article.fromJson(Map<String, dynamic> json) {
+  return Article(
+    id: json['id'],
+    title: json['title'],
+    authors: json['authors']?[0]?['name'] ?? 'Unknown',
+    imageUrl: json['image_url'] ?? '',
+    newsSite: json['news_site'] ?? 'Unknown',
+    summary: json['summary'] ?? '',
+    publishedAt: json['published_at'] ?? '',
+    url: json['url'] ?? '',
+    category: json['category'] ?? '',
+  );
+}
+```
+
+**Hal yang perlu diperhatikan:**
+
+- Nama key pada JSON harus disesuaikan dengan field yang dibaca di `Article.fromJson()`.
+- Jika nama field dari API berbeda, bagian pemetaan perlu diubah.
+- Operator `??` digunakan untuk memberikan nilai pengganti jika data bernilai `null`.
+- Jika struktur JSON berubah, proses parsing juga harus disesuaikan.
+
+Dengan demikian, data dari API dapat diubah menjadi objek yang memiliki struktur sesuai kebutuhan aplikasi.
+
+---
+
+## 14.9 Apakah ListScreen Harus Diubah Ketika Menggunakan API?
+
+Tidak selalu. Jika `ApiService` tetap mengembalikan data dengan tipe:
+
+```dart
+Future<List<Article>>
+```
+
+maka `ListScreen` tetap dapat menggunakan hasilnya seperti sebelumnya.
+
+Contohnya:
+
+```dart
+final articles = await ApiService.fetchArticles();
+```
+
+Artinya, bagian yang perlu diubah terutama adalah proses pengambilan data di `ApiService`, bukan keseluruhan tampilan aplikasi.
+
+Selama data yang dikembalikan tetap berupa `List<Article>`, proses filter, pembuatan card, dan navigasi detail dapat tetap menggunakan struktur yang sudah ada.
+
+---
+
+## 14.10 Catatan Implementasi pada Project
+
+Pada versi project ini, data News, Blogs, dan Reports masih menggunakan dataset lokal yang terdapat di `ApiService`.
+
+Contoh penggunaan `http.get()` pada bagian sebelumnya merupakan gambaran apabila aplikasi nantinya dikembangkan menggunakan API sungguhan. Contoh tersebut belum menjadi implementasi aktif pada versi project saat ini.
+
+**Kesimpulan:**
+
+- Dataset lokal: data ditulis dan disediakan langsung oleh aplikasi.
+- API sungguhan: data diambil dari server melalui HTTP request.
+- JSON: format data yang diterima dari server.
+- `jsonDecode()`: mengubah JSON menjadi objek Dart.
+- `Article.fromJson()`: mengubah data JSON menjadi objek `Article`.
+- `List<Article>`: hasil akhir yang digunakan untuk menampilkan artikel pada aplikasi.
